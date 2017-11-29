@@ -6,21 +6,11 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
-mouse_button_pressed = {}
-keys_pressed = {}
+from camera import Camera
 
-# angle of rotation for the camera direction
-angle = 0.0;
-# actual vector representing the camera's direction
-lx = 0.0
-lz = -1.0
-# XZ position of the camera
-x = 0.0
-z = 5.0
-# the key states. These variables will be zero
-# when no key is being presses
-deltaAngle = 0.0
-deltaMove = 0
+mouse_button_pressed = []
+keys_pressed = {}
+camera = Camera()
 
 colors = [
     (0,1,0),
@@ -66,6 +56,11 @@ surfaces = [
     (4,0,3,6)
 ]
 
+def text_ui(text, x, y):
+    glColor3f(1,1,1)
+    glWindowPos2s(x,y);
+    for i in text:
+        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(i))
 
 def cube ():
     # Surfaces
@@ -78,7 +73,7 @@ def cube ():
 
     # Line
     glLineWidth(2)
-    glColor3fv((1,1,1))
+    glColor3f(1,1,1)
     glBegin(GL_LINES)
     for edge in edges:
         for vertex in edge:
@@ -87,78 +82,68 @@ def cube ():
 
     # Points
     glPointSize(10)
-    glColor3fv((1,1,1))
+    glColor3f(1,1,1)
     glBegin(GL_POINTS)
     for verticie in verticies:
         glVertex3f(verticie[0], verticie[1], verticie[2])
     glEnd()
 
 
-def computePos(deltaMove):
-    global x, z, lx, lz
-    x += deltaMove * lx * 0.1
-    z += deltaMove * lz * 0.1
+def axis():
+    glLineWidth(2)
+    glBegin(GL_LINES)
+    glColor3f(1,0,0)
+    glVertex3f(-1000,0,0)
+    glVertex3f(1000,0,0)
+    glColor3f(0,1,0)
+    glVertex3f(0,-1000,0)
+    glVertex3f(0,1000,0)
+    glColor3f(0,0,1)
+    glVertex3f(0,0,-1000)
+    glVertex3f(0,0,1000)
+    glEnd()
 
-
-def computeDir(deltaAngle):
-    global angle, lx, lz
-    angle += deltaAngle
-    lx = sin(angle)
-    lz = -cos(angle)
+    glColor3f(1,1,1)
+    glPointSize(10)
+    glBegin(GL_POINTS)
+    glVertex3f(0, 0, 0)
+    glEnd()
 
 
 def key_pressed(key, x, y):
-    global keys_pressed, deltaAngle, deltaMove
     if key == b'\x1b':
         quit()
     print("Key pressed : {}, X : {}, Y: {}".format(key, x, y))
     keys_pressed[key] = True
 
-    if key == 100:
-        deltaAngle = -0.01
-    if key == 101:
-        deltaMove = 0.05
-    if key == 102:
-        deltaAngle = 0.01
-    if key == 103:
-        deltaMove = -0.05
-
 
 def key_released(key, x, y):
-    global keys_pressed, deltaAngle, deltaMove
     print("Key released : {}, X : {}, Y: {}".format(key, x, y))
     del keys_pressed[key]
 
-    if key == 100 or key == 102:
-        deltaAngle = 0.0
-    if key == 101 or key == 103:
-        deltaMove = 0.0
-
 
 def mouse_pressed(key, state, x, y):
-    global mouse_button_pressed, deltaAngle
+    global mouse_button_pressed
     print("Key : {}, state : {}, X: {}, Y: {}".format(key, state, x, y))
     if state == GLUT_DOWN:
-        mouse_button_pressed[key] = x, y
+        mouse_button_pressed.append([key, x, y, x, y])
     else:
-        if key == 2:
-            deltaAngle = 0.0
-        del mouse_button_pressed[key]
+        mouse_button_pressed.pop(-1)
 
 
 def mouse_move_while_pressed(x, y):
-    global deltaAngle
     width, height = glutGet(GLUT_WINDOW_WIDTH), glutGet(GLUT_WINDOW_HEIGHT)
-    print('Key : {}, X : {}, Y : {}'.format(mouse_button_pressed, x, y))
-    if 2 in mouse_button_pressed:
-        print(x - mouse_button_pressed[2][0], y - mouse_button_pressed[2][1])
-        if x - mouse_button_pressed[2][0] < 0:
-            deltaAngle = 0.01
-        else:
-            deltaAngle = -0.01
+    key = [mouse_button_pressed[-1][0], mouse_button_pressed[-1][3], mouse_button_pressed[-1][4], x, y]
+    mouse_button_pressed[-1] = key
+    if key[0] == 2:
+        if key[1] < key[3]:
+            camera.lookAt(1, 0)
+        if key[1] > key[3]:
+            camera.lookAt(-1, 0)
+    print('Key : {}'.format(mouse_button_pressed[-1]))
 
 
-def reshape (width, height):
+def reshape(width, height): # Called when window is reshaped
     if height <= 1:
         height == 1
     glMatrixMode(GL_PROJECTION) # Switch to the projection matrix so that we can manipulate how our scene is viewed  
@@ -168,34 +153,32 @@ def reshape (width, height):
     glMatrixMode(GL_MODELVIEW) # Switch back to the model view matrix, so that we can start drawing shapes correctly.
 
 
-def display (): # Called on each iteration
-    global deltaMove, deltaAngle, z, x, lx, lz
-    if deltaMove:
-        computePos(deltaMove)
-        print(x, z, lx, lz)
-    if deltaAngle:
-        print(x, z, lx, lz)
-        computeDir(deltaAngle)
-
+def display(): # Called on each iteration
     # Clear the color and depth buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    glLoadIdentity()
 
-    glLoadIdentity();
+    # Load camera
+    camera.update(keys_pressed)
+    camera.draw()
 
-    # print('ok')
-    gluLookAt(x, 1.0, z,
-              x + lx, 1.0, z + lz,
-              0.0, 1.0, 0.0)
-
-    # Loading objects
+    # Load objects
     cube()
+    axis()
+    glPointSize(10)
+    glColor3f(1,1,1)
+    glBegin(GL_POINTS)
+    glVertex3f(camera.lx, camera.ly, camera.lz)
+    glEnd()
+    text_ui("Camera: {}, {}, {}".format(round(camera.x, 2), round(camera.y, 2), round(camera.z, 2)), 10, glutGet(GLUT_WINDOW_HEIGHT) - 20)
+    text_ui("View: {}, {}, {}".format(round(camera.lx, 2), round(camera.ly, 2), round(camera.lz, 2)), 10, glutGet(GLUT_WINDOW_HEIGHT) - 35)
 
     # Copy the off-screen buffer to the screen.
     glutSwapBuffers()
     glutPostRedisplay()
 
 
-def main ():
+def main():
     glutInit(sys.argv)
 
     # Create a double-buffer RGBA window.   (Single-buffering is possible. So is creating an index-mode window.)
