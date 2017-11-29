@@ -7,10 +7,12 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
 from camera import Camera
+from pyramid import pyramid
 
 mouse_button_pressed = []
 keys_pressed = {}
 camera = Camera()
+pyramid = pyramid()
 
 colors = [
     (0,1,0),
@@ -55,12 +57,6 @@ surfaces = [
     (1,5,7,2),
     (4,0,3,6)
 ]
-
-def text_ui(text, x, y):
-    glColor3f(1,1,1)
-    glWindowPos2s(x,y);
-    for i in text:
-        glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(i))
 
 def cube ():
     # Surfaces
@@ -162,16 +158,12 @@ def display(): # Called on each iteration
     camera.update(keys_pressed)
     camera.draw()
 
-    # Load objects
-    cube()
+    # Load basics
     axis()
-    glPointSize(10)
-    glColor3f(1,1,1)
-    glBegin(GL_POINTS)
-    glVertex3f(camera.lx, camera.ly, camera.lz)
-    glEnd()
-    text_ui("Camera: {}, {}, {}".format(round(camera.x, 2), round(camera.y, 2), round(camera.z, 2)), 10, glutGet(GLUT_WINDOW_HEIGHT) - 20)
-    text_ui("View: {}, {}, {}".format(round(camera.lx, 2), round(camera.ly, 2), round(camera.lz, 2)), 10, glutGet(GLUT_WINDOW_HEIGHT) - 35)
+
+    # Load objects
+    # cube()
+    pyramid.draw()
 
     # Copy the off-screen buffer to the screen.
     glutSwapBuffers()

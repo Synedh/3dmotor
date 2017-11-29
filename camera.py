@@ -42,9 +42,6 @@ class Camera:
         if deltaAngleX == 1:
             print("right")
 
-    def draw(self):
-        gluLookAt(self.x, self.y, self.z, self.lx, self.ly, self.lz, 0, 1, 0)
-
     def update(self, keys_pressed):
         if GLUT_KEY_LEFT in keys_pressed:
             self.move(1, 0, 0)
@@ -58,3 +55,17 @@ class Camera:
             self.move(0, 1, 0)
         if 114 in keys_pressed:
             self.move(0, -1, 0)
+
+    def hud(self):
+        def text_ui(text, x, y):
+            glColor3f(1,1,1)
+            glWindowPos2s(x,y);
+            for i in text:
+                glutBitmapCharacter(GLUT_BITMAP_9_BY_15, ord(i))
+
+        text_ui("Camera: {}, {}, {}".format(round(self.x, 2), round(self.y, 2), round(self.z, 2)), 10, glutGet(GLUT_WINDOW_HEIGHT) - 20)
+        text_ui("View: {}, {}, {}".format(round(self.lx, 2), round(self.ly, 2), round(self.lz, 2)), 10, glutGet(GLUT_WINDOW_HEIGHT) - 35)
+
+    def draw(self):
+        gluLookAt(self.x, self.y, self.z, self.lx, self.ly, self.lz, 0, 1, 0)
+        self.hud()
