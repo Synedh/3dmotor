@@ -1,11 +1,11 @@
-from object import Object, Surface, Edge, Point
+from .object import Object, Surface, Edge, Point
 
-def pyramid() -> Object:
+def pyramid(x: int = 0) -> Object:
     points = [
-        Point(-1, -1, -1, 1),
-        Point(-1, -1, 1, 1),
-        Point(1, -1, 0, 1),
-        Point(0, 1, 0, 1)
+        Point(x - 1, x - 1, x - 1, 1),
+        Point(x - 1, x - 1, x + 1, 1),
+        Point(x + 1, x - 1, x, 1),
+        Point(x, x + 1, x, 1)
     ]
 
     edges = [

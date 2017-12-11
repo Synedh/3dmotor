@@ -1,11 +1,15 @@
 import random
 from OpenGL.GL import *
+from OpenGL.GLUT import *
 
 class Point:
-    def __init__(self, x: (int, int, int), y: (int, int, int), z: (int, int, int), mass: float):
+    def __init__(self, x: int, y: int, z: int, mass: float, vx: int = 0, vy: int = 0, vz: int = 0):
         self.x = x
         self.y = y
         self.z = z
+        self.vx = vx
+        self.vy = vy
+        self.vz = vz
         self.mass = mass
 
     def coords(self) -> [int]:
@@ -39,17 +43,21 @@ class Object:
         self.points = points
         self.edges = edges
         self.surfaces = surfaces
+        self.timeSinceStart = glutGet(GLUT_ELAPSED_TIME)
 
     def update(self):
+        newTimeSinceStart = glutGet(GLUT_ELAPSED_TIME)
+        deltaTime = newTimeSinceStart - self.timeSinceStart
+        self.timeSinceStart = newTimeSinceStart
         # Gravity
         # Speed
         pass
 
     def draw(self):
         # Surfaces
+        glColor3f(1, 0.5, 0)
         glBegin(GL_TRIANGLES)
         for surface in self.surfaces:
-            glColor3f(1, 0.5, 0)
             glVertex3fv(surface.coords()[0])
             glVertex3fv(surface.coords()[1])
             glVertex3fv(surface.coords()[2])

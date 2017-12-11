@@ -6,104 +6,15 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 
-from camera import Camera
-from pyramid import pyramid
+from tools.camera import Camera
+from tools.menu import createGLUTMenus
+from tools.axis import axis
+from objects.pyramid import pyramid
 
 mouse_button_pressed = []
 keys_pressed = {}
 camera = Camera()
-pyramid = pyramid()
-
-colors = [
-    (0,1,0),
-    (1,0.5,0),
-    (1,0,0),
-    (1,1,0),
-    (0,0,1),
-    (1,0,1)
-]
-
-verticies = [
-    (1, -1, -1),
-    (1, 1, -1),
-    (-1, 1, -1),
-    (-1, -1, -1),
-    (1, -1, 1),
-    (1, 1, 1),
-    (-1, -1, 1),
-    (-1, 1, 1)
-]
-
-edges = [
-    (0,1),
-    (0,3),
-    (0,4),
-    (2,1),
-    (2,3),
-    (2,7),
-    (6,3),
-    (6,4),
-    (6,7),
-    (5,1),
-    (5,4),
-    (5,7)
-]
-
-surfaces = [
-    (0,1,2,3),
-    (3,2,7,6),
-    (6,7,5,4),
-    (4,5,1,0),
-    (1,5,7,2),
-    (4,0,3,6)
-]
-
-def cube ():
-    # Surfaces
-    glBegin(GL_QUADS)
-    for i, surface in enumerate(surfaces):
-        for vertex in surface:
-            glColor3fv(colors[i])
-            glVertex3fv(verticies[vertex])
-    glEnd()
-
-    # Line
-    glLineWidth(2)
-    glColor3f(1,1,1)
-    glBegin(GL_LINES)
-    for edge in edges:
-        for vertex in edge:
-            glVertex3fv(verticies[vertex])
-    glEnd()
-
-    # Points
-    glPointSize(10)
-    glColor3f(1,1,1)
-    glBegin(GL_POINTS)
-    for verticie in verticies:
-        glVertex3f(verticie[0], verticie[1], verticie[2])
-    glEnd()
-
-
-def axis():
-    glLineWidth(2)
-    glBegin(GL_LINES)
-    glColor3f(1,0,0)
-    glVertex3f(-1000,0,0)
-    glVertex3f(1000,0,0)
-    glColor3f(0,1,0)
-    glVertex3f(0,-1000,0)
-    glVertex3f(0,1000,0)
-    glColor3f(0,0,1)
-    glVertex3f(0,0,-1000)
-    glVertex3f(0,0,1000)
-    glEnd()
-
-    glColor3f(1,1,1)
-    glPointSize(10)
-    glBegin(GL_POINTS)
-    glVertex3f(0, 0, 0)
-    glEnd()
+objects = [pyramid()]
 
 
 def key_pressed(key, x, y):
@@ -132,10 +43,7 @@ def mouse_move_while_pressed(x, y):
     key = [mouse_button_pressed[-1][0], mouse_button_pressed[-1][3], mouse_button_pressed[-1][4], x, y]
     mouse_button_pressed[-1] = key
     if key[0] == 2:
-        if key[1] < key[3]:
-            camera.lookAt(1, 0)
-        if key[1] > key[3]:
-            camera.lookAt(-1, 0)
+        camera.lookAt(key[3] - key[1], key[4] - key[2])
     print('Key : {}'.format(mouse_button_pressed[-1]))
 
 
@@ -157,31 +65,50 @@ def display(): # Called on each iteration
     # Load camera
     camera.update(keys_pressed)
     camera.draw()
+    camera.hud()
 
     # Load basics
     axis()
 
     # Load objects
-    # cube()
-    pyramid.draw()
+    for obj in objects:
+        obj.draw()
+
+    glPointSize(10)
+    glColor3f(1,1,1)
+    glBegin(GL_POINTS)
+    glVertex3f(camera.lx, camera.ly, camera.lz)
+    glEnd()
+
+
+    glPointSize(10)
+    glColor3f(0,1,1)
+    glBegin(GL_POINTS)
+    glVertex3f(camera.x, camera.y, camera.z)
+    glEnd()
 
     # Copy the off-screen buffer to the screen.
     glutSwapBuffers()
+
+    # Force opengl to call display on each loop.
     glutPostRedisplay()
 
 
 def main():
     glutInit(sys.argv)
 
-    # Create a double-buffer RGBA window.   (Single-buffering is possible. So is creating an index-mode window.)
+    # Create a double-buffer RGBA window with depth calculation.
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
 
-    # Create a window
+    # Create a window.
     glutInitWindowPosition(100,100)
     glutInitWindowSize(800, 800)
     glutCreateWindow('3D Motor')
 
-    # Set display, reshape, keyboard and mouse callbacks
+    # Enable depth test.
+    glEnable(GL_DEPTH_TEST)
+
+    # Set display, reshape, keyboard and mouse callbacks.
     glutDisplayFunc(display)
     glutReshapeFunc(reshape)
     glutKeyboardFunc(key_pressed)
@@ -191,12 +118,13 @@ def main():
     glutMouseFunc(mouse_pressed)
     glutMotionFunc(mouse_move_while_pressed)
 
-    glutIgnoreKeyRepeat(1)
+    # createGLUTMenus()
 
-    # Enable depth test
-    glEnable(GL_DEPTH_TEST)
+    glutIgnoreKeyRepeat(1)
 
     # Run the GLUT main loop until the user closes the window.
     glutMainLoop()
 
-main()
+
+if __name__ == '__main__':
+    main()
